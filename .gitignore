@@ -1,0 +1,13 @@
+temp/
+
+__pycache__/
+
+*.pyc
+
+*.pyo
+*.pyd
+
+.pytest_cache/
+.mypy_cache/
+
+prompt.txt

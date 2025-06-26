@@ -308,7 +308,7 @@ if __name__ == "__main__":
 
     subprocess.run([
         "python", "callapi.py",
-        "--api_key", "sk-c30706e4088c471e9aa44cabc1de677f",
+        "--api_key", "sk-ce946903f5ac4831b7f49cf1f7e91a91",
         "--prompt", prompt,  # 安全传入长字符串
         "--system_message", "这些是一门课程的课件或者笔记，你需要注意：我们直接通过某种工具将其转换成了纯文本，可能会造成格式错误，乱码或者信息丢失，请务必先根据已有的知识进行修复，然后逐字逐句的以 Markdown 的格式输出，你需要用 $ 包裹公式而不是括号和斜杠，输出修复后的内容，不要进行包括概括，内容拓展等的任何操作！！！",
         "--model", "deepseek-reasoner",
