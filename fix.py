@@ -3,7 +3,6 @@ import fitz  # PyMuPDF
 import requests
 import json
 import logging
-import os
 import sys
 import argparse
 from requests.adapters import HTTPAdapter
@@ -217,68 +216,6 @@ def save_file(path: str, content: str) -> None:
         f.write(content)
     logger.info(f"内容已保存至 {path}")
 
-def save_stream_thoughts(path: str, generator: Generator[str, None, None]) -> str:
-    """
-    保存流式输出的思考过程
-    
-    参数:
-        path: 保存思考过程的文件路径
-        generator: 流式响应生成器
-        
-    返回:
-        完整响应内容（不含None）
-    """
-    # 确保目录存在
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    
-    full_response = ""
-    try:
-        # 打开文件用于实时写入思考过程
-        with open(path, "w", encoding="utf-8") as f_thoughts:
-            for chunk in generator:
-                # 确保chunk是字符串且不为None
-                if chunk is None:
-                    logger.debug("收到空块，跳过")
-                    continue
-                    
-                chunk_str = str(chunk)
-                
-                # 打印到控制台（可选）
-                print(chunk_str, end='', flush=True)
-                
-                # 写入思考过程文件（仅写入当前块）
-                f_thoughts.write(chunk_str)
-                f_thoughts.flush()  # 确保实时写入
-                
-                # 拼接完整响应
-                full_response += chunk_str
-                
-    except Exception as e:
-        logger.error(f"保存思考过程时出错: {str(e)}")
-    
-    logger.info(f"思考过程已保存至 {path}")
-    return full_response
-
-def save_stream_result(path: str, content: str) -> None:
-    """
-    保存流式输出的最终结果
-    
-    参数:
-        path: 保存最终结果的文件路径
-        content: 完整响应内容
-    """
-    # 确保目录存在
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    
-    # 确保内容为字符串且不为None
-    if content is None:
-        content = ""
-    content = str(content)
-    
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content)
-    logger.info(f"最终结果已保存至 {path}")
-
 def extract_text_from_pdf(pdf_path: str) -> str:
     """从PDF文件中提取文本"""
     doc = fitz.open(pdf_path)
@@ -291,19 +228,18 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     doc.close()
     return "\n".join(full_text)
 
-def save_to_file(text: str, output_path: str = "output.txt"):
-    """保存文本到文件"""
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(text)
-
-def process_pdf(pdf_path: str, api_key: str):
+def process_pdf(pdf_path: str, api_key: str, output_dir: str = "output") -> str:
     """处理PDF文件并调用API"""
     # 提取PDF文本
     content = extract_text_from_pdf(pdf_path)
     
+    # 创建输出目录
+    os.makedirs(output_dir, exist_ok=True)
+    
     # 保存原始提取的文本
-    prompt_path = os.path.splitext(pdf_path)[0] + "_prompt.txt"
-    save_to_file(content, prompt_path)
+    base_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    prompt_path = os.path.join(output_dir, f"{base_name}_prompt.txt")
+    save_file(prompt_path, content)
     
     # 调用API处理文本
     result = call_deepseek_api(
@@ -318,16 +254,18 @@ def process_pdf(pdf_path: str, api_key: str):
     )
     
     # 保存处理结果
-    output_path = os.path.splitext(pdf_path)[0] + "_processed.txt"
-    save_to_file(result, output_path)
-    logger.info(f"处理完成，结果已保存至: {output_path}")
+    input_path = os.path.join(output_dir, f"{base_name}_input.txt")
+    save_file(input_path, result)
+    logger.info(f"处理完成，结果已保存至: {input_path}")
+    return input_path
 
 if __name__ == "__main__":
     # 设置命令行参数解析
     parser = argparse.ArgumentParser(description="PDF文本提取和格式化工具")
     parser.add_argument("pdf_file", help="要处理的PDF文件路径")
     parser.add_argument("--api_key", help="DeepSeek API密钥", required=True)
+    parser.add_argument("--output_dir", help="输出目录", default="output")
     args = parser.parse_args()
     
     # 处理PDF文件
-    process_pdf(args.pdf_file, args.api_key)
+    process_pdf(args.pdf_file, args.api_key, args.output_dir)

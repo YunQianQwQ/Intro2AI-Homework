@@ -16,4 +16,5 @@ prompt.txt
 prompt.md
 apikey.txt
 result.txt
-output_*
+output*
+input.txt
