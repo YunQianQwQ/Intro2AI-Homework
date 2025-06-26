@@ -11,3 +11,6 @@ __pycache__/
 .mypy_cache/
 
 prompt.txt
+*_prompt.txt
+*_processed.txt
+prompt.md

@@ -280,6 +280,7 @@ def save_stream_result(path: str, content: str) -> None:
     logger.info(f"最终结果已保存至 {path}")
 
 def extract_text_from_pdf(pdf_path: str) -> str:
+    """从PDF文件中提取文本"""
     doc = fitz.open(pdf_path)
     full_text = []
 
@@ -291,29 +292,42 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     return "\n".join(full_text)
 
 def save_to_file(text: str, output_path: str = "output.txt"):
+    """保存文本到文件"""
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(text)
 
+def process_pdf(pdf_path: str, api_key: str):
+    """处理PDF文件并调用API"""
+    # 提取PDF文本
+    content = extract_text_from_pdf(pdf_path)
+    
+    # 保存原始提取的文本
+    prompt_path = os.path.splitext(pdf_path)[0] + "_prompt.txt"
+    save_to_file(content, prompt_path)
+    
+    # 调用API处理文本
+    result = call_deepseek_api(
+        prompt=content,
+        api_key=api_key,
+        system_message="这些是一门课程的课件或者笔记，你需要注意：我们直接通过某种工具将其转换成了纯文本，可能会造成格式错误，乱码或者信息丢失，请务必先根据已有的知识进行修复，然后逐字逐句的以 Markdown 的格式输出，你需要用 $ 包裹公式而不是括号和斜杠，输出修复后的内容，不要进行包括概括，内容拓展等的任何操作！！！",
+        model="deepseek-reasoner",
+        max_tokens=16384,
+        deep_thought=True,
+        timeout=1145,
+        stream=False
+    )
+    
+    # 保存处理结果
+    output_path = os.path.splitext(pdf_path)[0] + "_processed.txt"
+    save_to_file(result, output_path)
+    logger.info(f"处理完成，结果已保存至: {output_path}")
+
 if __name__ == "__main__":
-    pdf_file = "lec3-rand-alg.pdf"  
-
-    content = extract_text_from_pdf(pdf_file)
-
-    prompt = content
-
-    with open("prompt.txt", "w", encoding="utf-8") as f:
-        f.write(prompt)
-
-    import subprocess
-
-    subprocess.run([
-        "python", "callapi.py",
-        "--api_key", "sk-ce946903f5ac4831b7f49cf1f7e91a91",
-        "--prompt", prompt,  # 安全传入长字符串
-        "--system_message", "这些是一门课程的课件或者笔记，你需要注意：我们直接通过某种工具将其转换成了纯文本，可能会造成格式错误，乱码或者信息丢失，请务必先根据已有的知识进行修复，然后逐字逐句的以 Markdown 的格式输出，你需要用 $ 包裹公式而不是括号和斜杠，输出修复后的内容，不要进行包括概括，内容拓展等的任何操作！！！",
-        "--model", "deepseek-reasoner",
-        "--max_tokens", "16384",
-        "--deep_thought", "True",
-        "--timeout", "1145",
-        "--stream", "False"
-    ])
+    # 设置命令行参数解析
+    parser = argparse.ArgumentParser(description="PDF文本提取和格式化工具")
+    parser.add_argument("pdf_file", help="要处理的PDF文件路径")
+    parser.add_argument("--api_key", help="DeepSeek API密钥", required=True)
+    args = parser.parse_args()
+    
+    # 处理PDF文件
+    process_pdf(args.pdf_file, args.api_key)
