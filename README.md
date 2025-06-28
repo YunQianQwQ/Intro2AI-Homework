@@ -51,6 +51,6 @@ python gen.py --apikey "sk-xxx" --filename "input.txt" --maxtoken 3000 --geniter
 
  使用注意事项：
 
-- 为保障生成质量，建议参数下限：$maxtoken \ge 1024$, $geniter \ge 2$, $valiter \ge 2$, $valproblems \ge 20$, $maxwait \ge 120$
+- 为保障生成质量，建议参数下限： $maxtoken \ge 1024,geniter \ge 2,valiter \ge 2,valproblems \ge 20,maxwait \ge 120$
 - 预估最大耗时：$maxwait \times (geniter + 3 \times valiter)$
 - API 响应时间较长，完整流程可能需要约 1 小时
